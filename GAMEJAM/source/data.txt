@@ -1,2 +1,0 @@
-highscore: 60
-gold: 2290
