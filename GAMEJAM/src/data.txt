@@ -1,0 +1,2 @@
+highscore: 77
+gold: 3060
