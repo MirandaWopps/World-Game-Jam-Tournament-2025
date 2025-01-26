@@ -1,0 +1,34 @@
+--Corotinas
+--[[
+local function menu(xPos, yPos)
+  local x = xPos
+  local y = yPos
+
+  -- Mouse pressed: ela atua nos botoes  
+  local mp = function(mx, my, button,istouch)
+      while true do
+          click =  false -- Clique fora do inimigo
+          if button == 1 then -- nao ESTÁ ENTRANDO AQUI
+              print("x/y:",mx,xPos,xPos + 210,"/",my,yPos,yPos+136,
+                (mx > xPos) and (mx < xPos + 210) and (my>yPos) and (my<yPos+136))
+              if  (mx > xPos) and (mx< xPos +210) and (my>yPos) and (my<yPos+136) then
+                  print("clicado")
+                  click= true -- Inimigo foi clicado
+              end
+          end
+          mx, my, button,istouch = coroutine.yield (click)
+      end
+    end
+
+
+    -- Nessa parte ficam a ligacao das funcoes daqui com as quais não estão encapsular.
+    return {
+        mousepressed = coroutine.wrap(mp),
+        
+        --draw = coroutine.wrap(dr),
+        
+        --update = coroutine.wrap(updt),
+            
+    }
+end
+]]

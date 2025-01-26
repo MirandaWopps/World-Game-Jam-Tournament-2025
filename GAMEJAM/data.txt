@@ -1,0 +1,2 @@
+highscore: 13
+gold: 1520
