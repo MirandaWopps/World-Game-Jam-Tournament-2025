@@ -200,7 +200,7 @@ local function spawnWave()
     enemy.width = enemyWidth
     enemy.height = enemyHeight
     enemy.radius = enemyWidth/2 
-    enemy.type = 1
+    enemy.type = 2
     table.insert(enemies, enemy) -- insercao na table
   end
   -- volta ao que era
