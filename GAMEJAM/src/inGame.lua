@@ -1,5 +1,8 @@
 local plane = require("plane")
 local data = require("data") 
+--local enemy = require("enemy")
+local flash = require("flash")
+
 -- Screen
 local screenWidth = 800
 local screenHeight = 800
@@ -132,8 +135,8 @@ local function updatePendingExplosions(dt)
   end
 end
 
-
--- Flash
+--[[
+-- Flash 
 local flashDuration = 1.5 -- Duração total do flash (subida e descida)
 local flashAlpha = 0 -- Opacidade atual do flash
 local flashActive = false -- Indica se o flash está ativo
@@ -145,7 +148,8 @@ function triggerFlash()
     flashActive = true
     flashStep = 1 / (flashDuration / 2) -- Calcula a velocidade da transição
   end
-end
+end ]]
+
 
 -- Função para gerar coordenadas aleatórias para spawn de inimigos fora da tela
 function coordRandomizer()
@@ -157,6 +161,7 @@ function coordRandomizer()
   end
   return numero
 end
+
 
 -- Função para gerar inimigos
 local function spawnEnemy()
@@ -174,6 +179,7 @@ local function spawnEnemy()
   enemy.type = 1
   table.insert(enemies, enemy)
 end
+
 
 -- Função para gerar 10 inimigos de um lado específico
 local function spawnWave()
@@ -265,6 +271,7 @@ function inGame.draw()
       love.graphics.draw(bolhaImage, bolha.x, bolha.y)
   end
 
+
   -- Desenhar os inimigos
   for _, enemy in ipairs(enemies) do
     if enemy.type == 1 then
@@ -273,6 +280,7 @@ function inGame.draw()
         love.graphics.draw(enemyBanzai, enemy.x, enemy.y, 0, 1, 1, enemy.width/2, enemy.height/2)
     end
   end
+  --draw.enemy()
 
   -- Desenhar os tiros
   for _, shot in ipairs(shots) do
@@ -280,19 +288,20 @@ function inGame.draw()
     love.graphics.circle("fill", shot.x, shot.y, shotRadius) -- Tiro como um círculo
     love.graphics.setColor(1, 1, 1) -- Reseta a cor
   end
-
+--[[
   -- Desenhar o flash branco, se ativo
   if flashAlpha > 0 then
     love.graphics.setColor(1, 1, 1, flashAlpha) -- Define a cor branca com opacidade
     love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight) -- Preenche a tela
     love.graphics.setColor(1, 1, 1) -- Reseta a cor
-  end
+  end]]
+  flash.draw()
 end
 
 -- Função update: atualiza a posição da bolha, inimigos e tiros
 function inGame.update(dt)
-  -- Atualizar o tempo total
-  totalTime = totalTime + dt
+  --[[ Atualizar o tempo total
+  totalTime = totalTime + dt]]
 
   -- Atualizar aviões
   plane.update(dt)
@@ -331,7 +340,7 @@ function inGame.update(dt)
 
 
   -- Flash
-  --Controlar a transição do flash
+  --[[Controlar a transição do flash
   if flashActive then
     flashAlpha = flashAlpha + flashStep * dt
     if flashAlpha >= 1 then
@@ -346,7 +355,7 @@ function inGame.update(dt)
   if totalTime <= 15 and totalTime >= 14 and not flashActive then
     triggerFlash()
   end
-  
+  ]]flash.update(dt)
 
   -- Controle de Movimento da Bolha
   for _,bolha in ipairs(bolhas) do
