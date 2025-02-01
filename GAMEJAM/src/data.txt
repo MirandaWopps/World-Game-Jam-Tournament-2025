@@ -1,2 +1,2 @@
-highscore: 77
-gold: 3060
+highscore: 193
+gold: 26510

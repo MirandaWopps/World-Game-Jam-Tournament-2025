@@ -2,6 +2,8 @@ local plane = require("plane")
 local data = require("data") 
 --local enemy = require("enemy")
 local flash = require("flash")
+local enemy = require("enemy")
+
 
 -- Screen
 local screenWidth = 800
@@ -14,10 +16,6 @@ font = love.graphics.newFont( "A Love of Thunder.ttf" , 48)
 
 -- Color
 goldColor = {1, 0.84, 0} -- RGB para dourado (255, 215, 0)
-
-
--- Valores dinamicos a serem mudados
-local totalTime = 0 -- Tempo total acumulado do jogo
 
 -- Scores
 highScore = 0
@@ -43,24 +41,13 @@ local bolhaImage = love.graphics.newImage("hero.png")
 local bolhaSpeed = 50 -- Velocidade da bolha (em pixels por segundo)
 
 
--- Enemies
-local enemyImg = love.graphics.newImage("enemy.png")
-local enemyBanzai = love.graphics.newImage("enemyBanzai.png")
-local enemyWidth = enemyImg:getWidth()
-local enemyHeight = enemyImg:getHeight()
-local enemyRadius = enemyWidth/2
-local enemies = {} -- Tabela para armazenar os inimigos
-local enemySpawnTimer = 0 -- Tempo para gerar novos inimigos
-local enemySpeed = 200 -- Velocidade dos inimigos
-local lastWaveScore = 0 -- gigawave
-
 
 -- Tiros
 local shots = {}
 local shotSpeed = 700
 local shotRadius = 5
 
-local backgroundSong1, ar15Sound, banzaiSound, airplaneSound, explosionSound
+local backgroundSong1, ar15Sound, airplaneSound, explosionSound
 
 
 function inGame.load()
@@ -68,7 +55,6 @@ function inGame.load()
     -- Songs
     backgroundSong1 = love.audio.newSource("seals3 maintheme.mp3", "stream")
     ar15Sound = love.audio.newSource("ar15 rajada.wav", "static")
-    banzaiSound = love.audio.newSource("banzai.mp3", "static")
     airplaneSound = love.audio.newSource("airstrike plane.wav", "static")
     explosionSound = love.audio.newSource("airstrike explosion.wav","static")
     
@@ -94,7 +80,8 @@ function inGame.start()
     keyDown = 's',
     keyUp = 'w'
   }
-  enemies = {}
+  enemy.start()
+  enemies = enemy.getEnemies()
   shots = {}
   roundScore = 0 
   highScore = data.getHighScore()
@@ -135,83 +122,6 @@ local function updatePendingExplosions(dt)
   end
 end
 
---[[
--- Flash 
-local flashDuration = 1.5 -- Duração total do flash (subida e descida)
-local flashAlpha = 0 -- Opacidade atual do flash
-local flashActive = false -- Indica se o flash está ativo
-local flashStep = 0 -- Controle para o aumento/diminuição da opacidade
-
--- Função para ativar o flash
-function triggerFlash()
-  if not flashActive then
-    flashActive = true
-    flashStep = 1 / (flashDuration / 2) -- Calcula a velocidade da transição
-  end
-end ]]
-
-
--- Função para gerar coordenadas aleatórias para spawn de inimigos fora da tela
-function coordRandomizer()
-  local numero
-  if math.random() < 0.5 then
-    numero = math.random(-200, -50)
-  else
-    numero = math.random(screenWidth + 50, screenWidth + 200)
-  end
-  return numero
-end
-
-
--- Função para gerar inimigos
-local function spawnEnemy()
-  local enemy = {}
-  if math.random() < 0.5 then
-    enemy.x = coordRandomizer()
-    enemy.y = math.random(0, screenHeight)
-  else
-    enemy.x = math.random(0, screenWidth)
-    enemy.y = coordRandomizer()
-  end
-  enemy.width = enemyWidth
-  enemy.height = enemyHeight
-  enemy.radius = enemyWidth/2
-  enemy.type = 1
-  table.insert(enemies, enemy)
-end
-
-
--- Função para gerar 10 inimigos de um lado específico
-local function spawnWave()
-  -- Escolher aleatoriamente o lado da tela
-  local sides = {"left", "right", "top", "bottom"}
-  local waveSide = sides[math.random(#sides)]
-  -- Gerar 10 inimigos
-  enemyImg = love.graphics.newImage("enemyBanzai.png") -- banzai gear
-  for i = 1, 10 do
-    local enemy = {}
-    if waveSide == "left" then -- esquerda da tela
-      enemy.x = -50 
-      enemy.y = math.random(0, screenHeight) +(i*7)
-    elseif waveSide == "right" then -- direita da tela
-      enemy.x = screenWidth + 50 
-      enemy.y = math.random(0, screenHeight) +(i*7)
-    elseif waveSide == "top" then -- topo da tela
-      enemy.x = math.random(0, screenWidth) +(i*7)
-      enemy.y = -50
-    elseif waveSide == "bottom" then -- baixo da tela
-      enemy.x = math.random(0, screenWidth) +(i*7)
-      enemy.y = screenHeight + 50
-    end
-    enemy.width = enemyWidth
-    enemy.height = enemyHeight
-    enemy.radius = enemyWidth/2 
-    enemy.type = 2
-    table.insert(enemies, enemy) -- insercao na table
-  end
-  -- volta ao que era
-  enemyImg = love.graphics.newImage("enemy.png")
-end
 
 function newBolha(targetX, targetY)
   table.insert(bolhas, {x=targetX, y=targetY})
@@ -272,15 +182,7 @@ function inGame.draw()
   end
 
 
-  -- Desenhar os inimigos
-  for _, enemy in ipairs(enemies) do
-    if enemy.type == 1 then
-        love.graphics.draw(enemyImg, enemy.x, enemy.y, 0, 1, 1, enemy.width/2, enemy.height/2)
-    else
-        love.graphics.draw(enemyBanzai, enemy.x, enemy.y, 0, 1, 1, enemy.width/2, enemy.height/2)
-    end
-  end
-  --draw.enemy()
+  enemy.draw()
 
   -- Desenhar os tiros
   for _, shot in ipairs(shots) do
@@ -288,21 +190,12 @@ function inGame.draw()
     love.graphics.circle("fill", shot.x, shot.y, shotRadius) -- Tiro como um círculo
     love.graphics.setColor(1, 1, 1) -- Reseta a cor
   end
---[[
-  -- Desenhar o flash branco, se ativo
-  if flashAlpha > 0 then
-    love.graphics.setColor(1, 1, 1, flashAlpha) -- Define a cor branca com opacidade
-    love.graphics.rectangle("fill", 0, 0, screenWidth, screenHeight) -- Preenche a tela
-    love.graphics.setColor(1, 1, 1) -- Reseta a cor
-  end]]
+
   flash.draw()
 end
 
 -- Função update: atualiza a posição da bolha, inimigos e tiros
 function inGame.update(dt)
-  --[[ Atualizar o tempo total
-  totalTime = totalTime + dt]]
-
   -- Atualizar aviões
   plane.update(dt)
   -- Verificar coleta de aviões
@@ -339,23 +232,8 @@ function inGame.update(dt)
   end
 
 
-  -- Flash
-  --[[Controlar a transição do flash
-  if flashActive then
-    flashAlpha = flashAlpha + flashStep * dt
-    if flashAlpha >= 1 then
-      flashAlpha = 1 -- Máxima opacidade
-      flashStep = -flashStep -- Inverter a direção da transição
-    elseif flashAlpha <= 0 then
-      flashAlpha = 0 -- Fim do flash
-      flashActive = false -- Desativa o flash
-    end
-  end
-  -- Ativar flash aos 14 segundos, oq  comba com a musica
-  if totalTime <= 15 and totalTime >= 14 and not flashActive then
-    triggerFlash()
-  end
-  ]]flash.update(dt)
+  flash.update(dt)
+
 
   -- Controle de Movimento da Bolha
   for _,bolha in ipairs(bolhas) do
@@ -377,20 +255,17 @@ function inGame.update(dt)
     bolha.y = math.max(0, math.min(bolha.y, screenHeight - 21))
   end
  
- 
-  -- Inimigos
-  -- Atualizar a posição dos inimigos
-  for _, enemy in ipairs(enemies) do
-    local dx = bolhas[1].x - enemy.x
-    local dy = bolhas[1].y - enemy.y
-    local distance = math.sqrt(dx^2 + dy^2)
-    enemy.x = enemy.x + (dx / distance) * enemySpeed * dt
-    enemy.y = enemy.y + (dy / distance) * enemySpeed * dt
-  end
 
-  -- Detecao de colisao com as bolhas
+    -- Atualiza os inimigos
+    enemy.update(dt, bolhas)
+
+    -- Verifica se precisa spawnar uma onda de inimigos
+    enemy.checkWave(roundScore)
+
+
+  -- Detecao de inimigo em colisao com as bolhas
   for i=#bolhas,1,-1 do
-    bolha = bolhas[i]
+    local bolha = bolhas[i]
     for _, enemy in ipairs(enemies) do
       local dx = bolha.x - enemy.x
       local dy = bolha.y - enemy.y
@@ -409,19 +284,6 @@ function inGame.update(dt)
       end
     end
   end
-  -- Gerar inimigos periodicamente
-  enemySpawnTimer = enemySpawnTimer - dt
-  if enemySpawnTimer <= 0 then
-    spawnEnemy()
-    enemySpawnTimer = 1
-  end
-  
-   --Wave: verificar se o score é múltiplo de 10 e diferente do último registrado
-  if roundScore > 0 and roundScore % 20 == 0 and roundScore ~= lastWaveScore then
-    spawnWave() -- Gerar 10 inimigos de um lado aleatório
-    lastWaveScore = roundScore -- Atualizar o último score que gerou a onda
-    love.audio.play(banzaiSound)
-  end
 
 
   -- Tiros
@@ -436,21 +298,20 @@ function inGame.update(dt)
       table.remove(shots, i)
     else
       -- Verifica colisão entre tiros e inimigos
-      for j = #enemies, 1, -1 do
-        local enemy = enemies[j]
-        local dx = shot.x - enemy.x
-        local dy = shot.y - enemy.y
+      local enemyList = enemy.getEnemies()
+      for j = #enemyList, 1, -1 do
+        local currentEnemy = enemyList[j]
+        local dx = shot.x - currentEnemy.x
+        local dy = shot.y - currentEnemy.y
         local dist = math.sqrt(dx*dx + dy*dy)
-        if dist < enemy.radius + shotRadius  then
+        if dist < currentEnemy.radius + shotRadius  then
           -- Remover o inimigo e o tiro
-          table.remove(enemies, j)
+          table.remove(enemy.getEnemies(), j)
           -- table.remove(shots, i) -- remove inimigo e tiro, mas uma ar-15 penetra 7 cadávers ou mais
-
           -- Incrementar o score
           roundScore = roundScore + 1
           gold = gold + 10
           data.addGold(10)
-          
           -- Reproduzir um som de abate
           -- love.audio.play(killSound)
           break
